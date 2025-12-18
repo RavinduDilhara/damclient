@@ -693,7 +693,7 @@
   background: radial-gradient(
     circle at center,
     transparent 60%,
-    rgba(239, 68, 68, 0.4) 100%
+    rgba(68, 65, 65, 0.8) 100%
   );
   pointer-events: none;
 }

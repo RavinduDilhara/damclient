@@ -5,6 +5,7 @@ interface BoardProps {
   selected: Coord | null;
   onCellClick: (row: number, col: number, cellValue: string | null) => void;
   playerColor: string | null;
+  onGameEnd?: (winner: string) => void;
 }
 
 function countCapturedPieces(board: (string | null)[][]) {

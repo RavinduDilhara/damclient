@@ -22,6 +22,10 @@ function App() {
     fromPlayer: string;
     requesterId: string;
   } | null>(null);
+  const [gameEndModal, setGameEndModal] = useState<{
+    show: boolean;
+    didWin: boolean;
+  }>({ show: false, didWin: false });
 
   useEffect(() => {
     const s: Socket = io(SOCKET_URL);
@@ -43,6 +47,12 @@ function App() {
 
     s.on("gameUpdate", (game: GameState) => {
       setGameState({ ...game });
+
+      // Check if game has ended
+      if (game.status === "finished" && game.winner) {
+        const didWin = game.winner === playerColor;
+        setGameEndModal({ show: true, didWin });
+      }
     });
 
     s.on("roomFull", () => {
@@ -84,7 +94,7 @@ function App() {
     return () => {
       socketRef.current?.disconnect();
     };
-  }, []);
+  }, [playerColor]);
 
   const handleJoin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -159,6 +169,21 @@ function App() {
     });
 
     setResetRequest(null);
+  };
+
+  const handleGameEndClose = () => {
+    // Disconnect and reset to join form
+    socketRef.current?.disconnect();
+    setConnected(false);
+    setGameState(null);
+    setPlayerColor(null);
+    setRoomId("");
+    setName("");
+    setGameEndModal({ show: false, didWin: false });
+
+    // Reconnect socket for next game
+    const s: Socket = io(SOCKET_URL);
+    socketRef.current = s;
   };
 
   return (
@@ -238,6 +263,34 @@ function App() {
                     No, Continue
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {gameEndModal.show && (
+            <div className="game-end-modal">
+              <div className="game-end-content">
+                <div
+                  className={`game-end-icon ${
+                    gameEndModal.didWin ? "winner" : "loser"
+                  }`}
+                >
+                  {gameEndModal.didWin ? "👑" : "😔"}
+                </div>
+                <h2 className="game-end-title">
+                  {gameEndModal.didWin ? "Victory!" : "Defeat"}
+                </h2>
+                <p className="game-end-message">
+                  {gameEndModal.didWin
+                    ? "Congratulations! You won the game!"
+                    : "Better luck next time!"}
+                </p>
+                <button
+                  className="game-end-button"
+                  onClick={handleGameEndClose}
+                >
+                  Play Again
+                </button>
               </div>
             </div>
           )}

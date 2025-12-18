@@ -23,8 +23,8 @@ function countCapturedPieces(board: (string | null)[][]) {
   }
 
   // Starting pieces: 12 each
-  const whiteCaptured = 12 - blackPieces; // White captured black pieces
-  const blackCaptured = 12 - whitePieces; // Black captured white pieces
+  const whiteCaptured = 12 - blackPieces; // White captured black pieces (black's losses)
+  const blackCaptured = 12 - whitePieces; // Black captured white pieces (white's losses)
 
   return { whiteCaptured, blackCaptured };
 }
@@ -41,65 +41,100 @@ export function Board({
 
   const { whiteCaptured, blackCaptured } = countCapturedPieces(gameState.board);
 
-  // Show lost pieces (pieces that were captured from you)
-  // If you're white, show white pieces that black captured (your losses)
-  // If you're black, show black pieces that white captured (your losses)
+  // whiteCaptured = how many black pieces were captured (black's losses)
+  // blackCaptured = how many white pieces were captured (white's losses)
+
+  // Determine which side is which based on player color
+  // White player sees: Black lost (top), White lost (bottom)
+  // Black player sees: White lost (top), Black lost (bottom)
   const isWhitePlayer = playerColor === "w";
-  const myLostPieces = isWhitePlayer ? whiteCaptured : blackCaptured;
-  const opponentLostPieces = isWhitePlayer ? blackCaptured : whiteCaptured;
+
+  const topLabel = "opponent lost:";
+  const topLostCount = isWhitePlayer ? whiteCaptured : blackCaptured;
+
+  const bottomLabel = "you lost:";
+  const bottomLostCount = isWhitePlayer ? blackCaptured : whiteCaptured;
+
+  // Flip the board for black player
+  const boardToDisplay = isWhitePlayer
+    ? gameState.board
+    : [...gameState.board].reverse().map((row) => [...row].reverse());
 
   return (
     <div className="board-container">
-      {/* Opponent's lost pieces - shown on top */}
+      {/* Top side - Opponent's losses */}
       <div className="captured-pieces captured-top">
-        <div className="captured-label">Opponent lost:</div>
+        <div className="captured-label">{topLabel}</div>
         <div className="captured-list">
-          {Array.from({ length: opponentLostPieces }).map((_, idx) => (
-            <div key={idx} className="captured-piece opponent-lost"></div>
-          ))}
+          {topLostCount > 0 ? (
+            Array.from({ length: topLostCount }).map((_, idx) => (
+              <div key={idx} className="captured-piece lost-piece-top"></div>
+            ))
+          ) : (
+            <span className="no-captures">None</span>
+          )}
         </div>
       </div>
 
       {/* Game Board */}
       <div className="board">
-        {gameState.board.map((row, rIdx) => (
-          <div key={rIdx} className="board-row">
-            {row.map((cell, cIdx) => {
-              const isDark = (rIdx + cIdx) % 2 === 1;
-              const isSelected =
-                selected && selected.row === rIdx && selected.col === cIdx;
+        {boardToDisplay.map((row, rIdx) => {
+          // Calculate actual row index based on perspective
+          const actualRowIdx = isWhitePlayer
+            ? rIdx
+            : gameState.board.length - 1 - rIdx;
 
-              return (
-                <div
-                  key={cIdx}
-                  className={`square ${isDark ? "dark" : "light"} ${
-                    isSelected ? "selected" : ""
-                  }`}
-                  onClick={() => onCellClick(rIdx, cIdx, cell)}
-                >
-                  {cell && (
-                    <div
-                      className={`piece ${
-                        cell.toLowerCase() === "w"
-                          ? "white-piece"
-                          : "black-piece"
-                      } ${cell === cell.toUpperCase() ? "king" : ""}`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+          return (
+            <div key={rIdx} className="board-row">
+              {row.map((cell, cIdx) => {
+                // Calculate actual col index based on perspective
+                const actualColIdx = isWhitePlayer
+                  ? cIdx
+                  : row.length - 1 - cIdx;
+                const isDark = (actualRowIdx + actualColIdx) % 2 === 1;
+                const isSelected =
+                  selected &&
+                  selected.row === actualRowIdx &&
+                  selected.col === actualColIdx;
+
+                return (
+                  <div
+                    key={cIdx}
+                    className={`square ${isDark ? "dark" : "light"} ${
+                      isSelected ? "selected" : ""
+                    }`}
+                    onClick={() =>
+                      onCellClick(actualRowIdx, actualColIdx, cell)
+                    }
+                  >
+                    {cell && (
+                      <div
+                        className={`piece ${
+                          cell.toLowerCase() === "w"
+                            ? "white-piece"
+                            : "black-piece"
+                        } ${cell === cell.toUpperCase() ? "king" : ""}`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Your lost pieces (in RED) - shown on bottom */}
+      {/* Bottom side - Your losses */}
       <div className="captured-pieces captured-bottom">
-        <div className="captured-label">You lost:</div>
+        <div className="captured-label">{bottomLabel}</div>
         <div className="captured-list">
-          {Array.from({ length: myLostPieces }).map((_, idx) => (
-            <div key={idx} className="captured-piece my-lost"></div>
-          ))}
+          {bottomLostCount > 0 ? (
+            Array.from({ length: bottomLostCount }).map((_, idx) => (
+              <div key={idx} className="captured-piece lost-piece"></div>
+            ))
+          ) : (
+            <span className="no-captures">None</span>
+          )}
         </div>
       </div>
     </div>

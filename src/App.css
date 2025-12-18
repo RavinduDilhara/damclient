@@ -657,15 +657,22 @@
   transform: scale(1.1);
 }
 
-/* Your lost pieces - RED */
-.my-lost {
+/* All lost pieces - RED */
+.lost-piece-top {
+  background: radial-gradient(circle at 30% 20%, #4e4949, #4e4949) !important;
+  border: 2px solid #4e4949 !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6), 0 0 16px rgba(68, 65, 65, 0.8) !important;
+  position: relative;
+}
+
+.lost-piece {
   background: radial-gradient(circle at 30% 20%, #ef4444, #dc2626) !important;
   border: 2px solid #b91c1c !important;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6), 0 0 16px rgba(239, 68, 68, 0.8) !important;
   position: relative;
 }
 
-.my-lost::after {
+.lost-piece::after {
   content: "";
   position: absolute;
   inset: -4px;
@@ -678,20 +685,17 @@
   pointer-events: none;
 }
 
-/* Opponent's lost pieces - Normal colors */
-.opponent-lost {
-  background: radial-gradient(circle at 30% 20%, #2c2d30, #2c2d30);
-  border: 2px solid #6b7280;
-}
-
-.white-piece-small {
-  background: radial-gradient(circle at 30% 20%, #f9fafb, #d1d5db);
-  border: 2px solid #9ca3af;
-}
-
-.black-piece-small {
-  background: radial-gradient(circle at 30% 20%, #111827, #020617);
-  border: 2px solid #4b5563;
+.lost-piece-top::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    transparent 60%,
+    rgba(239, 68, 68, 0.4) 100%
+  );
+  pointer-events: none;
 }
 
 .no-captures {

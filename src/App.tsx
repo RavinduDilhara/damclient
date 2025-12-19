@@ -22,6 +22,37 @@ function App() {
     fromPlayer: string;
     requesterId: string;
   } | null>(null);
+  const [gameResult, setGameResult] = useState<"won" | "lost" | null>(null);
+
+  // Check for winner whenever game state updates
+  useEffect(() => {
+    if (!gameState || !playerColor) return;
+
+    const whitePieces = countPiecesOnBoard(gameState.board, "w");
+    const blackPieces = countPiecesOnBoard(gameState.board, "b");
+
+    // Check if someone won
+    if (whitePieces === 0) {
+      // Black wins
+      setGameResult(playerColor === "b" ? "won" : "lost");
+    } else if (blackPieces === 0) {
+      // White wins
+      setGameResult(playerColor === "w" ? "won" : "lost");
+    }
+  }, [gameState, playerColor]);
+
+  function countPiecesOnBoard(board: (string | null)[][], color: "w" | "b") {
+    let count = 0;
+    for (let row = 0; row < board.length; row++) {
+      for (let col = 0; col < board[row].length; col++) {
+        const piece = board[row][col];
+        if (piece && piece.toLowerCase() === color) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
 
   useEffect(() => {
     const s: Socket = io(SOCKET_URL);
@@ -38,6 +69,7 @@ function App() {
         setPlayerColor(playerColor);
         setGameState({ ...gameState });
         setConnected(true);
+        setGameResult(null); // Reset game result on join
       }
     );
 
@@ -61,6 +93,7 @@ function App() {
 
     s.on("playerLeft", () => {
       alert("Opponent left. Waiting for another player...");
+      setGameResult(null); // Reset game result when opponent leaves
     });
 
     s.on(
@@ -72,6 +105,7 @@ function App() {
 
     s.on("resetConfirmed", () => {
       setResetRequest(null);
+      setGameResult(null); // Reset game result
       setSuccessMessage("Game has been reset!");
       setTimeout(() => setSuccessMessage(""), 3000);
     });
@@ -103,20 +137,21 @@ function App() {
     const socket = socketRef.current;
     if (!socket) return;
 
+    // Don't allow moves if game is over
+    if (gameResult) return;
+
     const isMyTurn = gameState?.currentPlayer === playerColor;
     if (!isMyTurn) return;
 
     const must = gameState?.mustContinueFrom as Coord | null;
 
-    // During a capture chain, you must keep using the same piece
     if (must) {
-      // Don't allow deselecting the chain piece
       if (selected && selected.row === row && selected.col === col) {
         return;
       }
     }
 
-    const myPiece = playerColor; // 'w' or 'b'
+    const myPiece = playerColor;
     const isMyPiece = cellValue && cellValue.toLowerCase() === myPiece;
 
     if (!selected) {
@@ -126,7 +161,6 @@ function App() {
       return;
     }
 
-    // Deselect only when not in a capture chain
     if (!must && selected.row === row && selected.col === col) {
       setSelected(null);
       return;
@@ -138,7 +172,6 @@ function App() {
       to: { row, col },
     });
 
-    // Selection will be re-set by gameUpdate when mustContinueFrom is present
     setSelected(null);
   };
 
@@ -159,6 +192,11 @@ function App() {
     });
 
     setResetRequest(null);
+  };
+
+  const handlePlayAgain = () => {
+    setGameResult(null);
+    handleReset();
   };
 
   return (
@@ -216,7 +254,29 @@ function App() {
             </div>
           )}
 
-          {resetRequest && (
+          {/* Winner/Loser Banner */}
+          {gameResult && (
+            <div className="game-end-modal">
+              <div className="game-end-content">
+                <div className={`game-end-icon ${gameResult === "won" ? "winner" : "loser"}`}>
+                  {gameResult === "won" ? "👑" : "😔"}
+                </div>
+                <h2 className="game-end-title">
+                  {gameResult === "won" ? "Victory!" : "Defeat"}
+                </h2>
+                <p className="game-end-message">
+                  {gameResult === "won"
+                    ? "Congratulations! You won the game!"
+                    : "Better luck next time!"}
+                </p>
+                <button className="game-end-button" onClick={handlePlayAgain}>
+                  Play Again
+                </button>
+              </div>
+            </div>
+          )}
+
+          {gameResult == null && resetRequest && (
             <div className="confirmation-modal">
               <div className="confirmation-content">
                 <h3>Reset Game?</h3>
